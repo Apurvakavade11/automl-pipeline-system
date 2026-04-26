@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2><i class="fas fa-upload"></i> Upload Training Dataset</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Upload CSV File</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Choose CSV file</label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".csv" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Instructions</h5>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li>Upload a CSV file with your training data</li>
+                    <li>Select target column after upload</li>
+                    <li>Click "Start Training" - You'll see progress page</li>
+                    <li>Results will appear automatically after training</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if preview %}
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Dataset Preview</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Dataset Shape:</strong> {{ shape[0] }} rows, {{ shape[1] }} columns</p>
+                
+                <div class="mb-3">
+                    <label for="target_column" class="form-label"><strong>Select Target Column</strong></label>
+                    <select class="form-control" id="target_column">
+                        <option value="">-- Select target column --</option>
+                        {% for column in columns %}
+                        <option value="{{ column }}">{{ column }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div id="problem_type" class="mb-3"></div>
+                
+                <button type="button" class="btn btn-success" id="train_button" disabled onclick="startTraining()">
+                    <i class="fas fa-play"></i> Start Training Models
+                </button>
+                
+                <hr>
+                <div class="table-responsive">
+                    <h6>Data Preview (first 10 rows):</h6>
+                    {{ preview|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#target_column').on('change', function() {
+        var targetColumn = $(this).val();
+        
+        if(targetColumn && targetColumn !== "") {
+            $('#problem_type').html('<div class="alert alert-info">Detecting problem type...</div>');
+            $('#train_button').prop('disabled', true);
+            
+            $.ajax({
+                url: '/detect_target',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({target_column: targetColumn}),
+                success: function(response) {
+                    var html = '<div class="alert alert-success">';
+                    html += '<strong>✅ Problem Type:</strong> ' + response.problem_type.toUpperCase() + '<br>';
+                    html += '<strong>Task:</strong> ' + response.task;
+                    if(response.n_classes) {
+                        html += '<br><strong>Number of Classes:</strong> ' + response.n_classes;
+                    }
+                    html += '</div>';
+                    $('#problem_type').html(html);
+                    $('#train_button').prop('disabled', false);
+                },
+                error: function() {
+                    $('#problem_type').html('<div class="alert alert-danger">Error detecting problem type</div>');
+                }
+            });
+        }
+    });
+});
+
+function startTraining() {
+    if(confirm('Start training models? You will be redirected to the progress page.')) {
+        $('#train_button').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Starting...');
+        
+        $.ajax({
+            url: '/start_training',
+            method: 'POST',
+            success: function(response) {
+                if(response.success) {
+                    window.location.href = '/progress_page';
+                } else {
+                    alert('Error: ' + response.error);
+                    $('#train_button').prop('disabled', false).html('<i class="fas fa-play"></i> Start Training Models');
+                }
+            },
+            error: function() {
+                alert('Error starting training');
+                $('#train_button').prop('disabled', false).html('<i class="fas fa-play"></i> Start Training Models');
+            }
+        });
+    }
+}
+</script>
+{% endif %}
+{% endblock %}

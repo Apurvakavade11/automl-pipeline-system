@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .progress-container {
+        background: white;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-top: 30px;
+    }
+    .progress {
+        height: 30px;
+        border-radius: 15px;
+        background-color: #e9ecef;
+    }
+    .progress-bar {
+        background: linear-gradient(135deg, #4a90e2, #50e3c2);
+        line-height: 30px;
+        font-weight: bold;
+        transition: width 0.5s;
+    }
+    .status-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    .current-model {
+        font-size: 18px;
+        font-weight: bold;
+        color: #4a90e2;
+    }
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #4a90e2;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .success-icon {
+        font-size: 60px;
+        color: #28a745;
+    }
+</style>
+
+<div class="container">
+    <div class="progress-container">
+        <h3 class="text-center mb-4">
+            <i class="fas fa-brain"></i> Training in Progress
+        </h3>
+        
+        <div class="mb-4">
+            <div class="progress">
+                <div class="progress-bar" id="progressBar" style="width: 0%">0%</div>
+            </div>
+        </div>
+        
+        <div class="status-card text-center">
+            <div id="spinner" class="spinner"></div>
+            <div id="statusMessage" class="mt-3">Initializing training...</div>
+            <div id="currentModel" class="current-model mt-2"></div>
+        </div>
+        
+        <div id="successMessage" style="display: none;" class="text-center mt-4">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h4 class="mt-3 text-success">Training Complete!</h4>
+            <p>Your models have been trained successfully.</p>
+            <a href="/results" class="btn btn-success btn-lg mt-3">
+                <i class="fas fa-chart-bar"></i> View Results
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Start checking training status
+    function checkStatus() {
+        fetch('/training_status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'training') {
+                    document.getElementById('progressBar').style.width = data.progress + '%';
+                    document.getElementById('progressBar').innerHTML = Math.round(data.progress) + '%';
+                    document.getElementById('statusMessage').innerHTML = data.message;
+                    document.getElementById('currentModel').innerHTML = 'Current: ' + data.current_model;
+                    setTimeout(checkStatus, 2000);
+                } else if (data.status === 'completed') {
+                    document.getElementById('spinner').style.display = 'none';
+                    document.getElementById('statusMessage').innerHTML = '✅ ' + data.message;
+                    document.getElementById('progressBar').style.width = '100%';
+                    document.getElementById('progressBar').innerHTML = '100%';
+                    document.getElementById('successMessage').style.display = 'block';
+                } else if (data.status === 'error') {
+                    document.getElementById('spinner').style.display = 'none';
+                    document.getElementById('statusMessage').innerHTML = '❌ ' + data.message;
+                    document.getElementById('statusMessage').className = 'text-danger';
+                } else {
+                    setTimeout(checkStatus, 2000);
+                }
+            });
+    }
+    
+    // Start training
+    fetch('/train', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                checkStatus();
+            } else {
+                document.getElementById('statusMessage').innerHTML = 'Error: ' + data.error;
+            }
+        });
+</script>
+{% endblock %}

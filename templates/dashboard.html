@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+<p class="text-muted">Welcome back, {{ username }}!</p>
+
+<div class="row mt-4">
+    <div class="col-md-4 mb-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <i class="fas fa-upload fa-2x mb-2"></i>
+                <h5 class="card-title">Upload Dataset</h5>
+                <p class="card-text">Upload your CSV dataset for training</p>
+                <a href="/upload" class="btn btn-light">Go to Upload →</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <i class="fas fa-cut fa-2x mb-2"></i>
+                <h5 class="card-title">Split Data</h5>
+                <p class="card-text">Split dataset into train/test sets</p>
+                <a href="/split_data" class="btn btn-light">Split Data →</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <i class="fas fa-chart-line fa-2x mb-2"></i>
+                <h5 class="card-title">Make Predictions</h5>
+                <p class="card-text">Make predictions using trained model</p>
+                <a href="/predict" class="btn btn-light">Predict →</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-history"></i> Recent Training Sessions</h5>
+            </div>
+            <div class="card-body">
+                {% if sessions and sessions|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Dataset</th>
+                                    <th>Problem Type</th>
+                                    <th>Best Model</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in sessions %}
+                                <tr>
+                                    <td>{{ session.created_at }}</td>
+                                    <td>{{ session.dataset_name[:30] if session.dataset_name else 'N/A' }}</td>
+                                    <td>
+                                        {% if session.problem_type == 'classification' %}
+                                            <span class="badge bg-primary">Classification</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Regression</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ session.best_model_name if session.best_model_name else 'N/A' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">No training sessions yet. Start by uploading a dataset and training models.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
